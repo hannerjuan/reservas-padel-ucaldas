@@ -44,15 +44,27 @@ watch(date, (newDate) => {
                             <h3 class="font-bold mb-4">Ver Disponibilidad</h3>
                             <input type="date" v-model="date" :min="new Date().toISOString().split('T')[0]" class="w-full mb-6 border-gray-300 rounded-md">
                             
-                            <div v-if="availableSlots.length > 0" class="grid grid-cols-3 gap-2">
-                                <Link v-for="slot in availableSlots" :key="slot.start" 
-                                    :href="route('reservations.new', { space: space.slug, start: slot.start })"
-                                    class="bg-white border border-blue-600 text-blue-600 py-2 text-center text-xs font-bold rounded hover:bg-blue-600 hover:text-white transition">
-                                    {{ slot.display }}
-                                </Link>
-                            </div>
-                            <div v-else class="text-center py-8 text-gray-400 italic">
-                                No hay franjas disponibles para esta fecha.
+                                                        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                                <h3 class="font-bold mb-4 text-gray-800">Ver Disponibilidad y Tarifas</h3>
+                                <input type="date" v-model="date" :min="new Date().toISOString().split('T')[0]" class="w-full mb-6 border-gray-300 rounded-md shadow-sm">
+                                
+                                <div v-if="availableSlots.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <Link v-for="slot in availableSlots" :key="slot.start" 
+                                        :href="route('reservations.new', { space: space.slug, start: slot.start })"
+                                        class="bg-white border border-gray-200 p-3 text-center rounded-xl shadow-sm hover:border-blue-600 hover:shadow-md transition flex flex-col items-center justify-center relative group">
+                                        
+                                        <span class="font-bold text-gray-800 text-sm group-hover:text-blue-600 transition">{{ slot.display }}</span>
+                                        
+                                        <span class="text-xs font-black text-green-600 mt-1">${{ slot.price.toLocaleString() }}</span>
+                                        
+                                        <span v-if="slot.label" class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-amber-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">
+                                            {{ slot.label }}
+                                        </span>
+                                    </Link>
+                                </div>
+                                <div v-else class="text-center py-8 text-gray-400 italic">
+                                    No hay franjas disponibles para esta fecha.
+                                </div>
                             </div>
                         </div>
                     </div>

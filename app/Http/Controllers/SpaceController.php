@@ -34,39 +34,36 @@ class SpaceController extends Controller
         $date = $request->input('date', \Carbon\Carbon::today()->toDateString());
         $slotMinutes = (int) env('RESERVATION_SLOT_MINUTES', 60);
 
-        // 1. Buscar disponibilidad en la base de datos
         $dayOfWeek = \Carbon\Carbon::parse($date)->dayOfWeek;
         $baseAvailability = $space->availabilities()->where('day_of_week', $dayOfWeek)->first();
 
-        $availableSlots = [];
+        // Traemos las reglas de precios específicas de esta cancha para este día de la semana
+        $specialRules = $space->priceRules()->where('day_of_week', $dayOfWeek)->get();
 
-        // FIX: Horario por defecto (8 AM a 10 PM) si no hay configuración en BD
+        $availableSlots = [];
         $openTime = '08:00:00';
         $closeTime = '22:00:00';
         $isOpen = true;
 
         if ($baseAvailability) {
             $isOpen = $baseAvailability->is_open;
-            $openTime = $baseAvailability->start_time; // Cambiado aquí
-            $closeTime = $baseAvailability->end_time;  // Cambiado aquí
+            $openTime = $baseAvailability->start_time;
+            $closeTime = $baseAvailability->end_time;
         }
 
         if ($isOpen) {
             $start = \Carbon\Carbon::parse($date . ' ' . $openTime);
             $end = \Carbon\Carbon::parse($date . ' ' . $closeTime);
 
-            // 2. Obtener reservas confirmadas/pendientes
             $busySlots = \App\Models\Reservation::where('space_id', $space->id)
                 ->whereIn('status', ['pendiente', 'confirmada'])
                 ->whereDate('start_time', $date)
                 ->get();
 
-            // 3. Obtener bloqueos manuales por mantenimiento
             $manualBlocks = \App\Models\BlockedSlot::where('space_id', $space->id)
                 ->whereDate('start_time', $date)
                 ->get();
 
-            // 4. Generar franjas horarias y verificar cruces
             while ($start->copy()->addMinutes($slotMinutes) <= $end) {
                 $slotEnd = $start->copy()->addMinutes($slotMinutes);
                 
@@ -76,11 +73,22 @@ class SpaceController extends Controller
                     return ($start < $block->end_time && $slotEnd > $block->start_time);
                 });
 
-                // Solo muestra la hora si no está ocupada y si es en el futuro
                 if (!$isBusy && $start > \Carbon\Carbon::now()) {
+                    $currentTimeStr = $start->format('H:i:s');
+                    
+                    // EVALUACIÓN DE PRECIO DINÁMICO: Verificamos si la franja actual coincide con alguna regla
+                    $matchedRule = $specialRules->first(function ($rule) use ($currentTimeStr) {
+                        return $currentTimeStr >= $rule->start_time && $currentTimeStr < $rule->end_time;
+                    });
+
+                    // Si hay regla aplica ese precio, de lo contrario el base de la cancha
+                    $finalPrice = $matchedRule ? $matchedRule->price_per_hour : $space->price_per_hour;
+
                     $availableSlots[] = [
                         'start' => $start->toDateTimeString(),
-                        'display' => $start->format('h:i A')
+                        'display' => $start->format('h:i A'),
+                        'price' => (int) $finalPrice, // Pasamos el precio dinámico calculado
+                        'label' => $matchedRule ? $matchedRule->label : null // Ejem: "Hora Pico"
                     ];
                 }
 

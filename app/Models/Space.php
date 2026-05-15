@@ -27,4 +27,8 @@ class Space extends Model
     {
         return $this->hasMany(BlockedSlot::class);
     }
+    public function priceRules()
+{
+    return $this->hasMany(PriceRule::class);
+}
 }

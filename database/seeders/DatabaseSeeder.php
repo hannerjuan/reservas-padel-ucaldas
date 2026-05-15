@@ -18,5 +18,6 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SpaceSeeder::class,
         ]);
+        $this->call(PriceRuleSeeder::class);
     }
 }
