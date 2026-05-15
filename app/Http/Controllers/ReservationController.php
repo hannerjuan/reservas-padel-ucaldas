@@ -113,12 +113,6 @@ class ReservationController extends Controller
         
         $reservation = Reservation::create($validated);
 
-        // Enviar correo de creación exitosa
-        Mail::to($reservation->user_email)->send(new ReservationStatusMail(
-            $reservation, 
-            'Hemos recibido tu solicitud de reserva. Actualmente está pendiente de revisión por el administrador.'
-        ));
-
         return redirect()->route('home')
             ->with('success', 'Reserva solicitada correctamente. Pendiente de aprobación.');
     }
@@ -128,10 +122,6 @@ class ReservationController extends Controller
     {
         $reservation->update(['status' => 'confirmada']);
         
-        Mail::to($reservation->user_email)->send(new ReservationStatusMail(
-            $reservation, 
-            '¡Buenas noticias! Tu reserva para la cancha de pádel ha sido confirmada.'
-        ));
         
         return back()->with('success', 'Reserva confirmada. El usuario ha sido notificado.');
     }
@@ -140,11 +130,7 @@ class ReservationController extends Controller
     public function reject(Reservation $reservation)
     {
         $reservation->update(['status' => 'rechazada']);
-        
-        Mail::to($reservation->user_email)->send(new ReservationStatusMail(
-            $reservation, 
-            'Lo sentimos, tu solicitud de reserva ha sido rechazada por el administrador debido a falta de disponibilidad u otro evento.'
-        ));
+    
         
         return back()->with('success', 'Reserva rechazada. El usuario ha sido notificado.');
     }
@@ -154,10 +140,6 @@ class ReservationController extends Controller
     {
         $reservation->update(['status' => 'cancelada']);
         
-        Mail::to($reservation->user_email)->send(new ReservationStatusMail(
-            $reservation, 
-            'Tu reserva confirmada ha sido cancelada. Si tienes dudas, comunícate con nosotros.'
-        ));
         
         return back()->with('success', 'Reserva cancelada. El usuario ha sido notificado.');
     }
